@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SentinelAgent - Autonomous CI/CD & Security Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --bg-card: rgba(17, 24, 39, 0.75);
+      --card-border: rgba(99, 102, 241, 0.2);
+      --accent-indigo: #6366f1;
+      --accent-indigo-hover: #4f46e5;
+      --accent-emerald: #10b981;
+      --accent-cyan: #06b6d4;
+      --text-primary: #f3f4f6;
+      --text-muted: #9ca3af;
+      --user-bubble: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+      --agent-bubble: rgba(30, 41, 59, 0.85);
+      --code-bg: #0f172a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: radial-gradient(circle at 50% -20%, #1e1b4b 0%, #090d16 70%);
+      color: var(--text-primary);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .chat-container {
+      width: 100%;
+      max-width: 950px;
+      height: 92vh;
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(99, 102, 241, 0.15);
+      overflow: hidden;
+    }
+
+    .chat-header {
+      padding: 1.25rem 1.75rem;
+      border-bottom: 1px solid var(--card-border);
+      background: rgba(15, 23, 42, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .brand-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent-indigo), var(--accent-cyan));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+    }
+
+    .header-title h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ffffff 0%, var(--primary) 100%);
+      color: #ffffff;
+      letter-spacing: -0.02em;
+    }
+
+    .header-title .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--accent-emerald);
+      background: rgba(16, 185, 129, 0.1);
+      padding: 0.4rem 0.8rem;
+      border-radius: 20px;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-emerald);
+      box-shadow: 0 0 8px var(--accent-emerald);
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 1.75rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .dialogue-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      max-width: 85%;
+    }
+
+    .dialogue-group.user {
+      align-self: flex-end;
+      align-items: flex-end;
+    }
+
+    .dialogue-group.agent {
+      align-self: flex-start;
+      align-items: flex-start;
+    }
+
+    .avatar-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding-left: 0.25rem;
+    }
+
+    .message {
+      padding: 1.1rem 1.4rem;
+      border-radius: 18px;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .message.user {
+      background: var(--user-bubble);
+      color: #ffffff;
+      border-top-right-radius: 4px;
+      box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+    }
+
+    .message.agent {
+      background: var(--agent-bubble);
+      color: var(--text-primary);
+      border: 1px solid var(--card-border);
+      border-top-left-radius: 4px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .message pre {
+      background: var(--code-bg);
+      padding: 0.85rem;
+      border-radius: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      margin: 0.75rem 0;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .message code {
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.88rem;
+    }
+
+    .message table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.75rem 0;
+      font-size: 0.9rem;
+    }
+
+    .message th, .message td {
+      border: 1px solid var(--card-border);
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+    }
+
+    .message th {
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--accent-indigo);
+    }
+
+    .outfit-preview-card {
+      margin-top: 1rem;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--card-border);
+      background: rgba(15, 23, 42, 0.8);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    }
+
+    .outfit-preview-card img {
+      width: 100%;
+      max-height: 480px;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.3s ease;
+    }
+
+    .outfit-preview-card img:hover {
+      transform: scale(1.02);
+    }
+
+    .outfit-preview-card .caption {
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+      color: var(--accent-cyan);
+      text-align: center;
+      font-weight: 600;
+      background: rgba(15, 23, 42, 0.9);
+      border-top: 1px solid var(--card-border);
+    }
+
+    .typing-indicator {
+      display: none;
+      align-self: flex-start;
+      background: var(--agent-bubble);
+      padding: 0.85rem 1.4rem;
+      border-radius: 18px;
+      border-top-left-radius: 4px;
+      border: 1px solid var(--card-border);
+      gap: 0.4rem;
+      align-items: center;
+    }
+
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--accent-indigo);
+      border-radius: 50%;
+      animation: bounce 1.4s infinite ease-in-out both;
+    }
+
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1.0); }
+    }
+
+    /* Example Prompts Bar */
+    .example-prompts-bar {
+      padding: 0.75rem 1.75rem 0.25rem 1.75rem;
+      display: flex;
+      gap: 0.6rem;
+      overflow-x: auto;
+      scroll-behavior: smooth;
+    }
+
+    .prompt-chip {
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid var(--card-border);
+      color: var(--text-primary);
+      padding: 0.55rem 0.9rem;
+      border-radius: 12px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .prompt-chip:hover {
+      background: rgba(99, 102, 241, 0.25);
+      border-color: var(--accent-indigo);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+    }
+
+    .chat-input-area {
+      padding: 1.25rem 1.75rem;
+      border-top: 1px solid var(--card-border);
+      background: rgba(15, 23, 42, 0.7);
+      display: flex;
+      gap: 0.85rem;
+    }
+
+    .chat-input-area input {
+      flex: 1;
+      background: rgba(30, 41, 59, 0.9);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 0.9rem 1.3rem;
+      color: var(--text-primary);
+      font-size: 0.95rem;
+      font-family: inherit;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .chat-input-area input:focus {
+      border-color: var(--accent-indigo);
+      box-shadow: 0 0 15px rgba(99, 102, 241, 0.25);
+    }
+
+    .chat-input-area button {
+      background: linear-gradient(135deg, var(--accent-indigo), var(--accent-indigo-hover));
+      color: #ffffff;
+      border: none;
+      border-radius: 14px;
+      padding: 0.9rem 1.75rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
+    }
+
+    .chat-input-area button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(79, 70, 229, 0.5);
+    }
+
+    .chat-input-area button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <!-- Header -->
+    <div class="chat-header">
+      <div class="header-brand">
+        <div class="brand-icon">🛡️</div>
+        <div class="header-title">
+          <h1>SentinelAgent</h1>
+          <div class="subtitle">Autonomous CI/CD Failure Triage, Security & Outfit Intelligence</div>
+        </div>
+      </div>
+      <div class="status-badge">
+        <div class="status-dot"></div>
+        <span>Agent Online</span>
+      </div>
+    </div>
+    
+    <!-- Dialogue Messages Area -->
+    <div class="chat-messages" id="messages">
+      <div class="dialogue-group agent">
+        <span class="avatar-label">🤖 SentinelAgent</span>
+        <div class="message agent">
+          Welcome! I am <strong>SentinelAgent</strong> — your autonomous CI/CD failure triage, code security, and outfit intelligence assistant.
+          <br><br>
+          Click one of the quick prompts below or type your request to analyze CI/CD failures, check security CVEs, or query live weather & outfits!
+        </div>
+      </div>
+    </div>
+
+    <!-- Typing Indicator -->
+    <div class="typing-indicator" id="typing">
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    </div>
+
+    <!-- Clickable Example Prompts Bar -->
+    <div class="example-prompts-bar">
+      <button class="prompt-chip" onclick="usePrompt('🔍 Triage CI/CD pipeline build failure and isolate root cause')">
+        🔍 Triage CI/CD Build Failure
+      </button>
+      <button class="prompt-chip" onclick="usePrompt('🛡️ Scan repository for CVE vulnerabilities and IAM secret exposures')">
+        🛡️ Scan Security & CVEs
+      </button>
+      <button class="prompt-chip" onclick="usePrompt('🌤️ Check weather in Seattle and recommend a layered outfit photo')">
+        🌤️ Weather & Outfit Recommendation
+      </button>
+    </div>
+
+    <!-- Input Area -->
+    <form class="chat-input-area" id="chat-form">
+      <input type="text" id="user-input" placeholder="Type a prompt or select a quick example above..." autocomplete="off" required />
+      <button type="submit" id="send-btn">Send</button>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('user-input');
+    const messages = document.getElementById('messages');
+    const typing = document.getElementById('typing');
+    const sendBtn = document.getElementById('send-btn');
+
+    function usePrompt(promptText) {
+      input.value = promptText;
+      input.focus();
+    }
+
+    function appendMessage(text, sender, imageUrls = []) {
+      const groupDiv = document.createElement('div');
+      groupDiv.classList.add('dialogue-group', sender);
+
+      const label = document.createElement('span');
+      label.classList.add('avatar-label');
+      label.textContent = sender === 'user' ? '👤 Developer' : '🤖 SentinelAgent';
+      groupDiv.appendChild(label);
+
+      const msgDiv = document.createElement('div');
+      msgDiv.classList.add('message', sender);
+
+      if (window.marked && sender === 'agent') {
+        msgDiv.innerHTML = marked.parse(text);
+      } else {
+        msgDiv.textContent = text;
+      }
+
+      if (imageUrls && imageUrls.length > 0) {
+        imageUrls.forEach(url => {
+          const card = document.createElement('div');
+          card.className = 'outfit-preview-card';
+          const img = document.createElement('img');
+          img.src = url;
+          img.alt = "Generated Preview Photo";
+          
+          const caption = document.createElement('div');
+          caption.className = 'caption';
+          caption.textContent = "🎨 Visual Preview Render";
+          
+          card.appendChild(img);
+          card.appendChild(caption);
+          msgDiv.appendChild(card);
+        });
+      }
+
+      groupDiv.appendChild(msgDiv);
+      messages.appendChild(groupDiv);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+
+      appendMessage(text, 'user');
+      input.value = '';
+      input.disabled = true;
+      sendBtn.disabled = true;
+      typing.style.display = 'flex';
+      messages.scrollTop = messages.scrollHeight;
+
+      try {
+        const resp = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+        const data = await resp.json();
+
+        if (resp.ok) {
+          appendMessage(data.response, 'agent', data.image_urls || []);
+        } else {
+          appendMessage(`Error: ${data.detail || 'Failed to get response'}`, 'agent');
+        }
+      } catch (err) {
+        appendMessage(`Network error: ${err.message}`, 'agent');
+      } finally {
+        typing.style.display = 'none';
+        input.disabled = false;
+        sendBtn.disabled = false;
+        input.focus();
+      }
+    });
+  </script>
+</body>
+</html>
